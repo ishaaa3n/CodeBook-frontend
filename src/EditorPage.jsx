@@ -28,9 +28,7 @@ const LANG_CONFIG = {
     icon: (
       <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
         <rect width="24" height="24" rx="3" fill="#F7DF1E"/>
-        {/* J — left side */}
         <path d="M13 19.5c0 1.6-.9 2.3-2.3 2.3-1.2 0-1.9-.6-2.3-1.4l.9-.8c.3.5.5.9 1.1.9.5 0 .9-.2.9-1V12H13v7.5z" fill="#333"/>
-        {/* S — right side */}
         <path d="M14.5 17.5c.4.6.9 1 1.7 1 .7 0 1.2-.4 1.2-.9 0-.6-.5-.8-1.3-1.1l-.4-.2c-1.2-.5-2-.9-2-2.4 0-1.2 1-2.1 2.5-2.1 1.1 0 1.9.4 2.4 1.4l-1.3.8c-.3-.5-.6-.7-1.1-.7-.5 0-.8.3-.8.7 0 .5.3.7 1.1 1l.4.2c1.5.6 2.3 1.2 2.3 2.7 0 1.5-1.2 2.3-2.8 2.3-1.6 0-2.6-.8-3.1-1.8l1.2-.9z" fill="#333"/>
       </svg>
     ),
@@ -115,6 +113,23 @@ const EditorPage = () => {
     if (!isNew) fetchNote();
   }, []);
 
+  // ── Keyboard shortcuts (fixed: correct deps, not duplicated, not inside JSX) ──
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "'") {
+        e.preventDefault();
+        handleRun();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [title, content, language, input, noteId, selectedFolderId]);
+
   const fetchFolders = async () => {
     try { const res = await API.get('/folders'); setFolders(res.data); } catch (e) {}
   };
@@ -123,8 +138,12 @@ const EditorPage = () => {
     try {
       const res = await API.get(`/notes/${id}`);
       const note = res.data;
-      setTitle(note.title); setLanguage(note.language); setContent(note.content);
-      setInput(note.input || ''); setNoteId(note.id); setSelectedFolderId(note.folderId || null);
+      setTitle(note.title);
+      setLanguage(note.language);
+      setContent(note.content);
+      setInput(note.input || '');
+      setNoteId(note.id);
+      setSelectedFolderId(note.folderId || null);
     } catch (e) { navigate('/notes'); }
   };
 
@@ -193,7 +212,6 @@ const EditorPage = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-        /* ── CodeBook blue accent theme ── */
         :root {
           --cb-blue: #1a9be6;
           --cb-blue-dim: rgba(26,155,230,0.18);
@@ -216,7 +234,6 @@ const EditorPage = () => {
         .back-btn { transition: color 0.15s ease; }
         .folder-opt:hover { background: #252830 !important; }
 
-        /* Success toast */
         .success-toast {
           position: fixed;
           top: 64px;
@@ -264,7 +281,6 @@ const EditorPage = () => {
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
-        /* Language logo buttons */
         .lang-logo-btn {
           display: flex;
           flex-direction: row;
@@ -292,7 +308,6 @@ const EditorPage = () => {
         }
         .lang-logo-btn:hover .lang-label { opacity: 1; }
 
-        /* STDIN panel */
         .stdin-panel {
           border-top: 1px solid var(--cb-border);
           background: var(--cb-surface);
@@ -336,7 +351,6 @@ const EditorPage = () => {
         }
         .stdin-ta::placeholder { color: rgba(150,160,175,0.35); }
 
-        /* Output panel */
         .output-header {
           padding: 10px 18px;
           border-bottom: 1px solid var(--cb-border);
@@ -395,13 +409,79 @@ const EditorPage = () => {
           padding: 0;
         }
 
+        /* Tooltip */
+        .tooltip-wrapper {
+          position: relative;
+          display: inline-flex;
+        }
+        .tooltip-wrapper {
+          position: relative;
+          display: inline-flex;
+        }
+        .tooltip {
+          position: absolute;
+          top: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: #0e1016;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 5px;
+          padding: 4px 9px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          color: rgba(180,195,215,0.8);
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+          z-index: 9999;
+        }
+        .tooltip-wrapper:hover .tooltip { opacity: 1; }
+
+        /* Pill buttons */
+        .pill-btn {
+          border-radius: 999px;
+          padding: 0 18px;
+          height: 36px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: 'JetBrains Mono', monospace;
+          letter-spacing: 0.01em;
+          border: 1px solid;
+          transition: all 0.15s ease;
+        }
+        .pill-btn-ghost {
+          background: #1e2128;
+          border-color: rgba(255,255,255,0.1);
+          color: rgba(180,195,215,0.85);
+        }
+        .pill-btn-ghost:hover {
+          background: #2e3240;
+          border-color: rgba(160,180,210,0.25);
+          transform: translateY(-1px);
+        }
+        .pill-btn-ghost:active { transform: translateY(0); }
+        .pill-btn-primary {
+          background: var(--cb-blue);
+          border-color: var(--cb-blue);
+          color: #fff;
+          box-shadow: 0 4px 16px rgba(26,155,230,0.35);
+        }
+        .pill-btn-primary:hover {
+          opacity: 0.92;
+          transform: translateY(-1px);
+          box-shadow: 0 6px 22px rgba(26,155,230,0.5);
+        }
+        .pill-btn-primary:active { transform: translateY(0); }
+
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.25s ease forwards; }
       `}</style>
 
       {/* Navbar */}
-      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '0 20px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: '#1a1c22' }}>
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '0 20px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: '#1a1c22', overflow: 'visible', position: 'relative', zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <button className="back-btn" onClick={() => navigate('/notes')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: 0, fontFamily: 'JetBrains Mono, monospace' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -460,73 +540,21 @@ const EditorPage = () => {
             )}
           </div>
 
-          {/* Save — pill, outlined */}
-          <button
-            className="save-btn"
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              background: '#1e2128',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '999px',
-              padding: '0 18px',
-              height: '36px',
-              fontSize: '12px',
-              fontWeight: '600',
-              color: 'rgba(190,205,225,0.9)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '7px',
-              fontFamily: 'JetBrains Mono, monospace',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {saving ? (
-              <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(190,205,225,0.8)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                Saving...
-              </>
-            ) : (
-              <>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(190,205,225,0.75)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                Save
-              </>
-            )}
-          </button>
+          {/* Save button */}
+          <div className="tooltip-wrapper">
+            <button className="pill-btn pill-btn-ghost" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <div className="tooltip">Ctrl + S</div>
+          </div>
 
-          {/* Run — pill, filled blue, icon only */}
-          <button
-            className="run-btn"
-            onClick={handleRun}
-            disabled={running}
-            style={{
-              background: 'linear-gradient(135deg, #1a9be6 0%, #1480c8 100%)',
-              border: '1px solid rgba(26,155,230,0.4)',
-              borderRadius: '999px',
-              padding: '0 16px',
-              height: '36px',
-              fontSize: '12px',
-              fontWeight: '700',
-              color: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0',
-              fontFamily: 'JetBrains Mono, monospace',
-              boxShadow: '0 2px 14px rgba(26,155,230,0.3)',
-              minWidth: '36px',
-            }}
-          >
-            {running ? (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 15 C20 10 25 8 30 11 L80 40 C86 43 86 57 80 60 L30 89 C25 92 20 90 20 85 Z" fill="#fff"/>
-              </svg>
-            )}
-          </button>
+          {/* Run button */}
+          <div className="tooltip-wrapper">
+            <button className="pill-btn pill-btn-primary" onClick={handleRun} disabled={running}>
+              {running ? 'Running...' : 'Run'}
+            </button>
+            <div className="tooltip">Ctrl + '</div>
+          </div>
         </div>
       </div>
 
@@ -556,7 +584,7 @@ const EditorPage = () => {
                   {cfg.icon}
                   <span
                     className="lang-label"
-                    style={{ color: isActive ? cfg.color : 'var(--text-muted)' }}
+                    style={{ color: isActive ? cfg.color : 'rgba(130,140,155,0.7)' }}
                   >
                     {cfg.label}
                   </span>
@@ -616,7 +644,7 @@ const EditorPage = () => {
                 >
                   {execution.status}
                 </span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                <span style={{ fontSize: '10px', color: 'rgba(130,140,155,0.7)', fontFamily: 'JetBrains Mono, monospace' }}>
                   {execution.executionTime}ms
                 </span>
               </div>
@@ -625,13 +653,13 @@ const EditorPage = () => {
 
           <div style={{ flex: 1, padding: '18px', overflow: 'auto' }}>
             {!execution && !running && (
-              <div style={{ color: 'var(--text-muted)', marginTop: '50px', textAlign: 'center' }}>
+              <div style={{ color: 'rgba(130,140,155,0.5)', marginTop: '50px', textAlign: 'center' }}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 14px', display: 'block', opacity: 0.4 }}><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', opacity: 0.5 }}>Run your code to see output</span>
               </div>
             )}
             {running && (
-              <div style={{ color: 'var(--text-secondary)', marginTop: '50px', textAlign: 'center' }}>
+              <div style={{ color: 'rgba(130,140,155,0.6)', marginTop: '50px', textAlign: 'center' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 14px', display: 'block' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
                 <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', opacity: 0.5 }}>Executing...</span>
               </div>
