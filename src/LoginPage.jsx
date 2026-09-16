@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import CodeBookLogo from './CodeBookLogo';
+import { BACKEND_URL } from './api';
 
 const CB = {
   bg:          '#13151a',
@@ -36,7 +37,7 @@ const LoginPage = () => {
   }, []);
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = `${BACKEND_URL}/oauth2/authorization/google`;
   };
 
   return (

@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+
 const API = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: `${BACKEND_URL}/api`,
 });
 
 API.interceptors.request.use((config) => {
@@ -16,4 +18,5 @@ API.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+export { BACKEND_URL };
 export default API;
